@@ -21,7 +21,8 @@ def test_upgrade_and_downgrade(tmp_path):
     command.upgrade(cfg, "head")
     eng = make_engine(url)
     tables = set(inspect(eng).get_table_names())
-    assert {"app_meta", "alembic_version"} <= tables
+    assert {"app_meta", "alembic_version", "accounts", "transactions", "instruments", "prices",
+            "investment_transactions"} <= tables
 
     command.downgrade(cfg, "base")
     assert "app_meta" not in set(inspect(eng).get_table_names())
@@ -62,3 +63,15 @@ def test_starter_categories_are_seeded(tmp_path):
     eng.dispose()
     assert {"Salary", "Housing", "Rent", "Groceries"} <= names
     assert sorted(parents) == ["Dining out", "Groceries"]
+
+
+def test_snapshot_column_added_by_phase3_and_removed_on_downgrade(tmp_path):
+    url = f"sqlite:///{tmp_path / 'cols.db'}"
+    cfg = _cfg(url)
+    command.upgrade(cfg, "head")
+    eng = make_engine(url)
+    assert "investments_value" in {c["name"] for c in inspect(eng).get_columns("net_worth_snapshots")}
+    command.downgrade(cfg, "0002")
+    assert "investments_value" not in {c["name"] for c in inspect(eng).get_columns("net_worth_snapshots")}
+    assert "instruments" not in set(inspect(eng).get_table_names())
+    eng.dispose()

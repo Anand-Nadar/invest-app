@@ -177,3 +177,14 @@ ul.tree ul li { padding: .3rem 0; }
   ul.bars > li { grid-template-columns: 1fr auto; }
   ul.bars > li .bar { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* ---------- Phase 3: portfolio ---------- */
+.tag { display: inline-block; font-size: .72rem; font-weight: 600; padding: 0 .4rem; border-radius: 999px; background: var(--ok-bg); color: var(--primary); vertical-align: middle; }
+.tag.warn { background: var(--warn-bg); color: var(--warn); }
+.alert.warn { background: var(--warn-bg); color: var(--warn); border-left-color: var(--warn); }
+.row-form.wrap { flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+.row-form.wrap .field { min-width: 9rem; }
+details.closed { margin: 1rem 0; }
+details.closed summary { cursor: pointer; color: var(--muted); padding: .35rem 0; }
+.price-input { width: 9rem; text-align: right; padding: .3rem .5rem; }
+input[type=text].price-input { width: 9rem; }

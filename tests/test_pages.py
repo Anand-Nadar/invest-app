@@ -33,3 +33,8 @@ def test_phases_without_pages_are_404(client):
 
 def test_static_css_served(client):
     assert client.get("/static/css/app.css").status_code == 200
+
+
+def test_portfolio_is_a_real_page_not_a_placeholder(client):
+    r = client.get("/portfolio")
+    assert r.status_code == 200 and "Built in Phase" not in r.text

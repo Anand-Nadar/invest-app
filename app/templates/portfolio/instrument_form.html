@@ -1,0 +1,17 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field, select_field %}
+{% block page_title %}{{ 'Edit instrument' if inst else 'Add instrument' }}{% endblock %}
+{% block body %}
+<header class="page-head"><h1>{{ 'Edit instrument' if inst else 'Add instrument' }}</h1></header>
+{{ alert(error) }}
+<form method="post" class="card form-grid">
+  {{ select_field("Exchange", "exchange", values, exchanges) }}
+  {{ select_field("Type", "type", values, types) }}
+  {{ text_field("Symbol", "symbol", values, required=true, hint="For example RELIANCE or NIFTYBEES. For a mutual fund, a short unique code or scheme name.") }}
+  {{ text_field("Name", "name", values, required=true) }}
+  {{ text_field("Sector", "sector", values, list="sector-list", hint="Optional. Used for the sector allocation view.") }}
+  <datalist id="sector-list">{% for s in sectors %}<option value="{{ s }}">{% endfor %}</datalist>
+  {{ text_field("ISIN", "isin", values, hint="Optional, 12 characters, for example INE002A01018.") }}
+  <div class="form-actions"><button class="btn" type="submit">Save instrument</button><a href="/portfolio/instruments">Cancel</a></div>
+</form>
+{% endblock %}

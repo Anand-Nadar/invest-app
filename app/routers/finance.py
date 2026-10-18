@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app import forms
@@ -17,6 +16,10 @@ from app.models.finance import (
     Account, Asset, Category, Liability, Transaction,
 )
 from app.roadmap import NAV_PHASES, PHASES
+from app.routers.common import (
+    XLSX_TYPE, attachment as _attachment, form_data, get_or_404, redirect, safe_date as _safe_date,
+    safe_int as _safe_int,
+)
 from app.services import finance as svc
 from app.services.charts import line_chart
 from app.services.errors import ValidationError
@@ -29,47 +32,12 @@ from app.templating import templates
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/finance", include_in_schema=False)
 PER_PAGE = 50
-XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 # ------------------------------------------------------------------------------ helpers
-async def form_data(request: Request) -> dict[str, str]:
-    form = await request.form()
-    return {k: v for k, v in form.items() if isinstance(v, str)}
-
-
 def render(request: Request, template: str, status_code: int = 200, **ctx):
     base = {"settings": get_settings(), "nav": NAV_PHASES, "phases": PHASES, "active": "finance"}
     return templates.TemplateResponse(request, f"finance/{template}", {**base, **ctx}, status_code=status_code)
-
-
-def redirect(url: str) -> RedirectResponse:
-    return RedirectResponse(url, status_code=303)
-
-
-def get_or_404(db: Session, model, obj_id: int):
-    obj = db.get(model, obj_id)
-    if obj is None:
-        raise HTTPException(status_code=404)
-    return obj
-
-
-def _safe_date(value: str) -> date | None:
-    try:
-        return date.fromisoformat(value) if value else None
-    except ValueError:
-        return None
-
-
-def _safe_int(value: str) -> int | None:
-    try:
-        return int(value) if value else None
-    except ValueError:
-        return None
-
-
-def _attachment(data: bytes, filename: str, media_type: str) -> Response:
-    return Response(data, media_type=media_type, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 # -------------------------------------------------------------------------- overview

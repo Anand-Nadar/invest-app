@@ -8,6 +8,10 @@ from app.services.errors import ValidationError
 MAX_AMOUNT = Decimal("10000000000000")  # 1e13
 
 
+def _a(word: str) -> str:
+    return "an" if word[:1].lower() in "aeiou" else "a"
+
+
 def clean_text(value: str | None, label: str, max_len: int = 100, required: bool = False) -> str | None:
     v = (value or "").strip()
     if not v:
@@ -77,9 +81,50 @@ def parse_optional_int(value: str | None, label: str, required: bool = False) ->
     v = (value or "").strip()
     if not v:
         if required:
-            raise ValidationError(f"Choose a {label.lower()}.")
+            raise ValidationError(f"Choose {_a(label)} {label.lower()}.")
         return None
     try:
         return int(v)
     except ValueError:
         raise ValidationError(f"Choose a valid {label.lower()}.") from None
+
+
+def parse_quantity(value: str | None, label: str = "Quantity") -> Decimal:
+    cleaned = (value or "").strip().replace(",", "")
+    if not cleaned:
+        raise ValidationError(f"{label} is required.")
+    try:
+        d = Decimal(cleaned)
+    except InvalidOperation:
+        raise ValidationError(f"{label} must be a number, for example 25 or 10.523.") from None
+    if not d.is_finite() or d <= 0:
+        raise ValidationError(f"{label} must be greater than zero.")
+    if d >= Decimal("1000000000000"):
+        raise ValidationError(f"{label} is too large.")
+    return d.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+
+def parse_price(value: str | None, label: str = "Price") -> Decimal:
+    cleaned = (value or "").strip().replace(",", "").replace("₹", "").replace(" ", "")
+    if not cleaned:
+        raise ValidationError(f"{label} is required.")
+    try:
+        d = Decimal(cleaned)
+    except InvalidOperation:
+        raise ValidationError(f"{label} must be a number, for example 2450.75.") from None
+    if not d.is_finite() or d <= 0:
+        raise ValidationError(f"{label} must be greater than zero.")
+    if d >= MAX_AMOUNT:
+        raise ValidationError(f"{label} is too large.")
+    return d.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+
+
+def parse_positive_int(value: str | None, label: str) -> int:
+    v = (value or "").strip()
+    try:
+        n = int(v)
+    except ValueError:
+        raise ValidationError(f"{label} must be a whole number greater than zero.") from None
+    if n <= 0 or n > 1_000_000:
+        raise ValidationError(f"{label} must be a whole number greater than zero.")
+    return n

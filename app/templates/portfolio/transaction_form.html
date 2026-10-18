@@ -1,0 +1,66 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field, notes_field %}
+{% block page_title %}{{ 'Edit transaction' if tx else 'Add transaction' }}{% endblock %}
+{% block body %}
+<header class="page-head"><h1>{{ 'Edit investment transaction' if tx else 'Add investment transaction' }}</h1></header>
+{{ alert(error) }}
+{% if not instruments %}
+<section class="empty"><h2>Add an instrument first</h2><p><a href="/portfolio/instruments/new">Add an instrument</a> before recording transactions.</p></section>
+{% else %}
+<form method="post" class="card form-grid" id="itx-form">
+  <fieldset class="field wide kind-pick">
+    <legend>Type</legend>
+    {% for k in kinds %}<label><input type="radio" name="kind" value="{{ k }}"{% if values.get('kind') == k %} checked{% endif %}> {{ labels[k] }}</label>{% endfor %}
+  </fieldset>
+  {{ text_field("Date", "date", values, type="date", required=true, hint="For a split or bonus, use the ex-date.") }}
+  <label class="field">
+    <span id="instrument-label">Instrument</span>
+    <select name="instrument_id" id="instrument">
+      <option value="">Choose instrument</option>
+      {% for i in instruments %}<option value="{{ i.id }}"{% if values.get('instrument_id')|string == i.id|string %} selected{% endif %}>{{ i.symbol }} - {{ i.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field" data-kinds="buy sell dividend fee">
+    <span>Account</span>
+    <select name="account_id">
+      <option value="">Choose account</option>
+      {% for a in accounts %}<option value="{{ a.id }}"{% if values.get('account_id')|string == a.id|string %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+    </select>
+    <small>The account the cash moves through.</small>
+  </label>
+  <div class="field" data-kinds="buy sell">{{ text_field("Quantity", "quantity", values, mode="decimal", hint="Whole shares; mutual funds can have decimals.") }}</div>
+  <div class="field" data-kinds="buy sell">{{ text_field("Price per unit (₹)", "price", values, mode="decimal") }}</div>
+  <div class="field" data-kinds="buy sell">{{ text_field("Fees and taxes (₹)", "fees", values, mode="decimal", hint="Brokerage, STT, stamp duty and so on. Added to cost on a buy, deducted from proceeds on a sell.") }}</div>
+  <div class="field" data-kinds="dividend fee">{{ text_field("Amount (₹)", "amount", values, mode="decimal", hint="The cash actually received (or charged).") }}</div>
+  <div class="field" data-kinds="split bonus">{{ text_field("Old units", "ratio_old", values, mode="numeric") }}</div>
+  <div class="field" data-kinds="split bonus">{{ text_field("New units", "ratio_new", values, mode="numeric") }}</div>
+  <p class="muted wide" data-kinds="split">Split: every <em>old</em> unit becomes <em>new</em> units. A 1:5 split is old 1, new 5. Cost basis stays the same, so average cost falls.</p>
+  <p class="muted wide" data-kinds="bonus">Bonus: for every <em>old</em> units held you receive <em>new</em> free units. A 1:1 bonus is old 1, new 1. Fractions are dropped for shares.</p>
+  {{ notes_field(values) }}
+  <div class="form-actions"><button class="btn" type="submit">Save transaction</button><a href="/portfolio/transactions">Cancel</a></div>
+</form>
+
+{% if tx %}
+<form method="post" action="/portfolio/transactions/{{ tx.id }}/delete" class="danger-zone" onsubmit="return confirm('Delete this transaction? Holdings and cash will be recalculated.')">
+  <button class="btn danger" type="submit">Delete transaction</button>
+</form>
+{% endif %}
+
+<script>
+  (function () {
+    var form = document.getElementById('itx-form');
+    if (!form) return;
+    function sync() {
+      var checked = form.querySelector('input[name=kind]:checked');
+      var kind = checked ? checked.value : 'buy';
+      form.querySelectorAll('[data-kinds]').forEach(function (el) {
+        el.hidden = el.dataset.kinds.split(' ').indexOf(kind) === -1;
+      });
+      document.getElementById('instrument-label').textContent = kind === 'fee' ? 'Instrument (optional)' : 'Instrument';
+    }
+    form.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert %}
+{% block page_title %}Instruments{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Instruments</h1>
+  <p class="lede">The stocks, ETFs and mutual funds you track. An instrument with transactions can be made inactive but not deleted.</p>
+</header>
+{{ alert(error) }}
+<p><a class="btn" href="/portfolio/instruments/new">Add instrument</a></p>
+{% if instruments %}
+<div class="table-wrap"><table class="data">
+  <thead><tr><th>Instrument</th><th>Exchange</th><th>Type</th><th>Sector</th><th class="num">Held</th><th class="num">Latest price</th><th><span class="sr">Actions</span></th></tr></thead>
+  <tbody>
+  {% for i in instruments %}
+    <tr{% if not i.is_active %} class="inactive"{% endif %}>
+      <td><a href="/portfolio/instruments/{{ i.id }}">{{ i.symbol }}</a><div class="sub">{{ i.name }}{% if not i.is_active %} (inactive){% endif %}</div></td>
+      <td>{{ i.exchange }}</td>
+      <td>{{ types.get(i.type, i.type) }}</td>
+      <td>{{ i.sector or '-' }}</td>
+      <td class="num">{% if i.id in held %}{{ held[i.id].quantity|qty }}{% else %}-{% endif %}</td>
+      <td class="num">{% if i.id in latest %}{{ latest[i.id][0]|price }}<div class="sub">{{ latest[i.id][1].strftime('%d %b %Y') }}</div>{% else %}-{% endif %}</td>
+      <td class="actions">
+        <a href="/portfolio/instruments/{{ i.id }}/edit">Edit</a>
+        <form method="post" action="/portfolio/instruments/{{ i.id }}/toggle"><button class="link">{{ 'Deactivate' if i.is_active else 'Reactivate' }}</button></form>
+        <form method="post" action="/portfolio/instruments/{{ i.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ i.symbol ~ "? Its saved prices will be removed too.")|tojson }})'><button class="link danger">Delete</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<section class="empty"><h2>No instruments yet</h2><p>Add the stocks and funds you hold to start recording transactions.</p></section>
+{% endif %}
+{% endblock %}

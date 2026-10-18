@@ -10,7 +10,7 @@ import datetime as dt
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, Index, Numeric, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -21,6 +21,7 @@ ACCOUNT_TYPES = [
     ("bank", "Bank account"),
     ("cash", "Cash"),
     ("wallet", "Wallet / UPI"),
+    ("brokerage", "Brokerage / demat"),
     ("credit_card", "Credit card"),
     ("other", "Other"),
 ]
@@ -138,5 +139,6 @@ class NetWorthSnapshot(TimestampMixin, Base):
     snapshot_date: Mapped[dt.date] = mapped_column(Date)
     accounts_total: Mapped[Decimal] = mapped_column(MONEY)
     other_assets: Mapped[Decimal] = mapped_column(MONEY)
+    investments_value: Mapped[Decimal] = mapped_column(MONEY, default=Decimal("0.00"), server_default=text("0"))
     liabilities: Mapped[Decimal] = mapped_column(MONEY)
     net_worth: Mapped[Decimal] = mapped_column(MONEY)

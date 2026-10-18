@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.config import get_settings
 from app.logging_config import configure_logging
 from app.roadmap import NAV_PHASES
-from app.routers import finance, health, pages
+from app.routers import finance, health, pages, portfolio
 from app.templating import templates
 
 log = logging.getLogger("app")
@@ -35,6 +35,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(finance.router)  # before pages: /finance must not hit /{slug}
+    app.include_router(portfolio.router)
     app.include_router(pages.router)
 
     @app.exception_handler(StarletteHTTPException)

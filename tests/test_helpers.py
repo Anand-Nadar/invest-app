@@ -4,7 +4,10 @@ from decimal import Decimal as D
 import pytest
 
 from app.formatting import format_inr, format_pct
-from app.forms import clean_text, parse_choice, parse_date, parse_money, parse_optional_int, parse_rate
+from app.forms import (
+    clean_text, parse_choice, parse_date, parse_money, parse_optional_int, parse_positive_int, parse_price,
+    parse_quantity, parse_rate,
+)
 from app.services.charts import line_chart
 from app.services.errors import ValidationError
 from app.services.exports import to_csv, to_xlsx
@@ -50,6 +53,10 @@ def test_parse_date_and_choice_and_text():
     with pytest.raises(ValidationError):
         clean_text("x" * 11, "Name", 10)
     assert parse_optional_int("", "x") is None
+    with pytest.raises(ValidationError, match="Choose an account"):
+        parse_optional_int("", "Account", required=True)
+    with pytest.raises(ValidationError, match="Choose a category"):
+        parse_optional_int("", "Category", required=True)
     with pytest.raises(ValidationError):
         parse_optional_int("abc", "x")
     assert parse_rate("8.5%", "Rate") == D("8.50")
@@ -108,3 +115,14 @@ def test_line_chart_geometry():
     assert line_chart([5])["dots"]
     flat = line_chart([4, 4, 4])
     assert len({y for _x, y in flat["dots"]}) == 1
+
+
+def test_quantity_price_and_ratio_parsing():
+    assert parse_quantity("1,250") == D("1250.000000")
+    assert parse_quantity("12.3456789") == D("12.345679")
+    assert parse_price("₹ 2,450.755") == D("2450.7550")
+    assert parse_positive_int("5", "Ratio") == 5
+    for fn, bad in ((parse_quantity, "0"), (parse_quantity, "-1"), (parse_quantity, "x"), (parse_price, "0"),
+                    (parse_price, ""), (parse_positive_int, "0"), (parse_positive_int, "1.5"), (parse_positive_int, "")):
+        with pytest.raises(ValidationError):
+            fn(bad) if fn is not parse_positive_int else fn(bad, "Ratio")

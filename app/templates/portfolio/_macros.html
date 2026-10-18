@@ -1,0 +1,11 @@
+{% macro pnl(v, pct=none) -%}
+<span class="amt {{ 'pos' if v > 0 else ('neg' if v < 0 else 'muted') }}">{{ v|inr_signed }}{% if pct is not none %} <small>({{ pct|pct_signed }})</small>{% endif %}</span>
+{%- endmacro %}
+
+{% macro tx_details(t, labels) -%}
+{% if t.kind in ('buy', 'sell') %}{{ t.quantity|qty }} at {{ t.price|price }}{% if t.fees and t.fees > 0 %}, fees {{ t.fees|inr }}{% endif %}
+{%- elif t.kind == 'dividend' %}Dividend received
+{%- elif t.kind == 'fee' %}Account charge
+{%- elif t.kind == 'split' %}Each {{ t.ratio_old }} unit{{ '' if t.ratio_old == 1 else 's' }} became {{ t.ratio_new }}
+{%- elif t.kind == 'bonus' %}{{ t.ratio_new }} bonus for every {{ t.ratio_old }} held{% endif %}
+{%- endmacro %}

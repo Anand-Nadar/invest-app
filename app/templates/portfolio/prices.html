@@ -1,0 +1,30 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field %}
+{% block page_title %}Update prices{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Update prices</h1>
+  <p class="lede">Enter the latest closing price or NAV for any instruments you want to revalue. Leave a row blank to keep its current price. Automatic prices arrive in Phase 4.</p>
+</header>
+{{ alert(error) }}
+{% if instruments %}
+<form method="post" class="card">
+  <div class="form-grid" style="margin-bottom:1rem">{{ text_field("Price date", "date", values, type="date", required=true) }}</div>
+  <div class="table-wrap"><table class="data compact">
+    <thead><tr><th>Instrument</th><th class="num">Latest saved</th><th class="num">New price (₹)</th></tr></thead>
+    <tbody>
+    {% for i in instruments %}
+      <tr>
+        <td>{{ i.symbol }} <span class="sub">{{ i.name }}</span>{% if i.id in held %} <span class="tag">held</span>{% endif %}</td>
+        <td class="num">{% if i.id in latest %}{{ latest[i.id][0]|price }} <span class="sub">{{ latest[i.id][1].strftime('%d %b %Y') }}</span>{% else %}<span class="muted">none</span>{% endif %}</td>
+        <td class="num"><input type="text" inputmode="decimal" name="price_{{ i.id }}" value="{{ values.get('price_' ~ i.id, '') }}" aria-label="New price for {{ i.symbol }}" class="price-input"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="form-actions" style="margin-top:1rem"><button class="btn" type="submit">Save prices</button><a href="/portfolio">Cancel</a></div>
+</form>
+{% else %}
+<section class="empty"><h2>No instruments yet</h2><p><a href="/portfolio/instruments/new">Add an instrument</a> first.</p></section>
+{% endif %}
+{% endblock %}

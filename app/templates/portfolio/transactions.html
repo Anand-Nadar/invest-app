@@ -1,0 +1,71 @@
+{% extends "portfolio/_layout.html" %}
+{% from "portfolio/_macros.html" import pnl, tx_details %}
+{% block page_title %}Investment transactions{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Investment transactions</h1>
+  <p class="lede">Buys, sells, dividends, account charges, stock splits and bonus shares. Cash effects are shown from the account's point of view.</p>
+</header>
+
+{% if not has_instruments %}
+<section class="empty"><h2>Add an instrument first</h2><p>Transactions are recorded against a stock, ETF or fund. <a href="/portfolio/instruments/new">Add an instrument</a>.</p></section>
+{% else %}
+<form class="filters" method="get" action="/portfolio/transactions">
+  <label class="field"><span>Period</span>
+    <select name="period" id="f-period">{% for k, l in presets %}<option value="{{ k }}"{% if view.preset == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>From</span><input type="date" name="start" value="{{ view.filter.start.isoformat() if view.filter.start else '' }}" data-custom></label>
+  <label class="field"><span>To</span><input type="date" name="end" value="{{ view.filter.end.isoformat() if view.filter.end else '' }}" data-custom></label>
+  <label class="field"><span>Type</span>
+    <select name="kind"><option value="">All types</option>{% for k in kinds %}<option value="{{ k }}"{% if view.filter.kind == k %} selected{% endif %}>{{ labels[k] }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>Instrument</span>
+    <select name="instrument_id"><option value="">All instruments</option>{% for i in instruments %}<option value="{{ i.id }}"{% if view.filter.instrument_id == i.id %} selected{% endif %}>{{ i.symbol }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>Account</span>
+    <select name="account_id"><option value="">All accounts</option>{% for a in accounts %}<option value="{{ a.id }}"{% if view.filter.account_id == a.id %} selected{% endif %}>{{ a.name }}</option>{% endfor %}</select>
+  </label>
+  <div class="form-actions"><button class="btn" type="submit">Apply filters</button></div>
+</form>
+<script>
+  (function () {
+    var p = document.getElementById('f-period');
+    document.querySelectorAll('[data-custom]').forEach(function (el) { el.addEventListener('change', function () { p.value = 'custom'; }); });
+  })();
+</script>
+
+<div class="toolbar">
+  <a class="btn" href="/portfolio/transactions/new">Add transaction</a>
+  <span class="muted">Export: <a href="/portfolio/transactions/export.csv?{{ qs }}">CSV</a>, <a href="/portfolio/transactions/export.xlsx?{{ qs }}">Excel</a></span>
+</div>
+<p class="summary-line">{{ total }} transaction{{ '' if total == 1 else 's' }}. Net cash effect: {{ pnl(net_cash) }}.</p>
+
+{% if rows %}
+<div class="table-wrap"><table class="data">
+  <thead><tr><th>Date</th><th>Type</th><th>Instrument</th><th>Details</th><th>Account</th><th class="num">Cash effect</th><th><span class="sr">Actions</span></th></tr></thead>
+  <tbody>
+  {% for t in rows %}
+    <tr>
+      <td class="nowrap">{{ t.date.strftime('%d %b %Y') }}</td>
+      <td>{{ labels[t.kind] }}</td>
+      <td>{% if t.instrument %}<a href="/portfolio/instruments/{{ t.instrument.id }}">{{ t.instrument.symbol }}</a>{% else %}-{% endif %}</td>
+      <td>{{ tx_details(t, labels) }}{% if t.notes %}<div class="sub">{{ t.notes }}</div>{% endif %}</td>
+      <td>{{ t.account.name if t.account else '-' }}</td>
+      <td class="num">{% if t.kind in ('split', 'bonus') %}<span class="muted">-</span>{% else %}{{ pnl(effects[t.id]) }}{% endif %}</td>
+      <td class="actions"><a href="/portfolio/transactions/{{ t.id }}/edit">Edit</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% if pages > 1 %}
+<nav class="pager" aria-label="Pages">
+  {% if page > 1 %}<a href="/portfolio/transactions?{{ qs }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a href="/portfolio/transactions?{{ qs }}&amp;page={{ page + 1 }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<section class="empty"><h2>No transactions found</h2><p>Nothing matches these filters.</p></section>
+{% endif %}
+{% endif %}
+{% endblock %}

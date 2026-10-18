@@ -8,8 +8,9 @@ Built in 8 phases; each phase ships something usable. See the roadmap in `app/ro
 | --- | --- |
 | 1 Foundation & setup | Complete |
 | 2 Personal finance & wealth | Complete |
-| 3 Investment portfolio | Next |
-| 4-8 | Planned |
+| 3 Investment portfolio | Complete |
+| 4 Market data integration | Next |
+| 5-8 | Planned |
 
 ## Setup
 
@@ -44,6 +45,26 @@ In VS Code use the "Invest App (uvicorn, reload)" launch configuration.
 
 Rules: amounts are `Decimal`; **transfers never count as income or expense**; a transaction can't be dated
 before its account's opening date; accounts with transactions can be deactivated but not deleted.
+
+## Phase 3 features (Portfolio)
+
+- Instruments: NSE/BSE stocks, ETFs and mutual funds, with optional sector and ISIN
+- Transactions: buy, sell, dividend, account fee, stock split and bonus shares
+- Holdings with quantity, average cost, cost basis, market value, unrealized and realized P&L, dividends, XIRR
+- Cash for every investment transaction moves through a Finance account (type "Brokerage / demat"),
+  so account balances and net worth stay consistent
+- Asset allocation by asset class (including cash) and by sector
+- Realized P&L by Indian financial year, CSV export; transaction exports to CSV/Excel
+- Prices are entered by hand (bulk "Update prices" page) until Phase 4 adds automatic data
+
+Rules:
+- Cost basis is the **weighted-average** method; buying fees are part of cost, selling fees reduce proceeds.
+- Every save, edit and delete replays the whole history and is rejected if it becomes impossible
+  (e.g. selling units you don't hold, or deleting a buy that a later sell depends on).
+- Same-day ordering: splits/bonus first, then buys, then sells.
+- Holdings without a price are valued at cost and flagged; prices older than 7 days are flagged.
+- Investment dividends are shown in Portfolio and are not counted as Finance "income".
+- Capital gains tax in India is normally FIFO with holding periods; the numbers here are for performance tracking.
 
 ## Test
 

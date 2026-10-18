@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}Portfolio{% endblock %} - {{ settings.app_name }}{% endblock %}
+{% block content %}
+<nav class="tabs" aria-label="Portfolio sections">
+  {% for key, label, href in [("holdings", "Holdings", "/portfolio"), ("transactions", "Transactions", "/portfolio/transactions"), ("instruments", "Instruments", "/portfolio/instruments"), ("realized", "Realized P&L", "/portfolio/realized")] %}
+  <a href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{% block body %}{% endblock %}
+{% endblock %}

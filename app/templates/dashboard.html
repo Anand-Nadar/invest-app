@@ -3,7 +3,7 @@
 {% block content %}
 <header class="page-head">
   <h1>Dashboard</h1>
-  <p class="lede">Your accounts, investments and research will come together here. Phases 1 and 2 are complete: add accounts and record income and expenses in Finance.</p>
+  <p class="lede">Your accounts, investments and research will come together here. Phases 1 to 3 are complete: track your money in Finance and your holdings in Portfolio.</p>
 </header>
 
 {% if has_accounts %}
@@ -11,11 +11,12 @@
   <h2 id="fin-h">Your finances</h2>
   <dl class="facts big">
     <div><dt>Net worth</dt><dd class="amt{% if nw.net_worth < 0 %} neg{% endif %}">{{ nw.net_worth|inr }}</dd></div>
+    <div><dt>Investments</dt><dd class="amt">{{ nw.investments_value|inr }}</dd></div>
     <div><dt>Income this month</dt><dd class="amt pos">{{ month.income|inr }}</dd></div>
     <div><dt>Expenses this month</dt><dd class="amt">{{ month.expenses|inr }}</dd></div>
     <div><dt>Savings rate</dt><dd class="amt">{{ month.savings_rate|pct }}</dd></div>
   </dl>
-  <p><a href="/finance">Open finance</a></p>
+  <p><a href="/finance">Open finance</a>, <a href="/portfolio">open portfolio</a></p>
 </section>
 {% else %}
 <section aria-labelledby="empty-h" class="empty">

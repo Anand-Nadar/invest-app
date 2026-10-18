@@ -1,0 +1,113 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert %}
+{% from "portfolio/_macros.html" import pnl %}
+{% block page_title %}Holdings{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Portfolio</h1>
+  <p class="lede">What you own, what it cost, and how it is doing. Buys and sells move cash through the account you choose, so balances stay in step with Finance.</p>
+</header>
+{{ alert(error) }}
+
+{% if n_instruments == 0 %}
+<section class="empty">
+  <h2>Add your first instrument</h2>
+  <p>An instrument is a stock, ETF or mutual fund, for example RELIANCE on NSE. Add the ones you hold, then record your buys.</p>
+  <p><a class="btn" href="/portfolio/instruments/new">Add instrument</a></p>
+</section>
+{% elif n_transactions == 0 %}
+<section class="empty">
+  <h2>Record your first transaction</h2>
+  <p>Create a brokerage account in Finance (type "Brokerage / demat"), move money into it with a transfer, then record a buy.</p>
+  <p><a class="btn" href="/portfolio/transactions/new">Add transaction</a> <a href="/finance/accounts/new">Add brokerage account</a></p>
+</section>
+{% elif pf %}
+<dl class="facts big">
+  <div><dt>Market value</dt><dd class="amt">{{ pf.totals.market_value|inr }}</dd></div>
+  <div><dt>Invested (cost basis)</dt><dd class="amt">{{ pf.totals.cost_basis|inr }}</dd></div>
+  <div><dt>Unrealized P&amp;L</dt><dd>{{ pnl(pf.totals.unrealized, pf.totals.unrealized_pct) }}</dd></div>
+  <div><dt>Realized P&amp;L</dt><dd>{{ pnl(pf.totals.realized) }}</dd></div>
+  <div><dt>Dividends</dt><dd class="amt">{{ pf.totals.dividends|inr }}</dd></div>
+  <div><dt>Annualised return (XIRR)</dt><dd class="amt">{{ pf.totals.xirr_pct|pct_signed if pf.totals.xirr_pct is not none else 'n/a' }}</dd></div>
+</dl>
+<p class="muted">Total return so far: <strong>{{ pf.totals.total_return|inr_signed }}</strong> (unrealized + realized + dividends).
+  {% if pf.totals.xirr_pct is none %}XIRR needs at least 30 days of history and a priced holding.{% endif %}</p>
+
+{% if pf.totals.unpriced or pf.totals.stale %}
+<p class="alert warn" role="status">
+  {% if pf.totals.unpriced %}{{ pf.totals.unpriced }} holding{{ '' if pf.totals.unpriced == 1 else 's' }} ha{{ 's' if pf.totals.unpriced == 1 else 've' }} no price and {{ 'is' if pf.totals.unpriced == 1 else 'are' }} valued at cost. {% endif %}
+  {% if pf.totals.stale %}{{ pf.totals.stale }} price{{ '' if pf.totals.stale == 1 else 's' }} older than a week. {% endif %}
+  <a href="/portfolio/prices">Update prices</a>. Prices here are entered by you; they are not live quotes.
+</p>
+{% endif %}
+{% for a, bal in negative_cash %}
+<p class="alert warn" role="status">{{ a.name }} cash is {{ bal|inr }}. Record a transfer into this account, or set its opening balance, so it reconciles with your broker.</p>
+{% endfor %}
+
+<div class="toolbar">
+  <a class="btn" href="/portfolio/transactions/new">Add transaction</a>
+  <a href="/portfolio/prices">Update prices</a>
+</div>
+
+<section aria-labelledby="hold-h">
+  <h2 id="hold-h">Holdings</h2>
+  {% if pf.holdings %}
+  <div class="table-wrap"><table class="data">
+    <thead><tr><th>Instrument</th><th class="num">Quantity</th><th class="num">Avg cost</th><th class="num">Cost basis</th><th class="num">Price</th><th class="num">Market value</th><th class="num">Unrealized P&amp;L</th></tr></thead>
+    <tbody>
+    {% for h in pf.holdings %}
+      <tr>
+        <td><a href="/portfolio/instruments/{{ h.instrument.id }}">{{ h.instrument.symbol }}</a><div class="sub">{{ h.instrument.name }}</div></td>
+        <td class="num">{{ h.quantity|qty }}</td>
+        <td class="num">{{ h.avg_cost|price }}</td>
+        <td class="num">{{ h.cost_basis|inr }}</td>
+        <td class="num">{% if h.price is not none %}{{ h.price|price }}<div class="sub">{{ h.price_date.strftime('%d %b %Y') }}{% if h.stale %} <span class="tag warn">old</span>{% endif %}</div>{% else %}<a href="/portfolio/prices">Add price</a>{% endif %}</td>
+        <td class="num">{{ h.market_value|inr }}</td>
+        <td class="num">{% if h.valued_at_cost %}<span class="muted">No price</span>{% else %}{{ pnl(h.unrealized, h.unrealized_pct) }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><th colspan="3">Total</th><td class="num">{{ pf.totals.cost_basis|inr }}</td><td></td><td class="num">{{ pf.totals.market_value|inr }}</td><td class="num">{{ pnl(pf.totals.unrealized, pf.totals.unrealized_pct) }}</td></tr></tfoot>
+  </table></div>
+  <p class="muted">Average cost uses the weighted-average method and includes buying fees.</p>
+  {% else %}<p class="muted">No open positions.</p>{% endif %}
+</section>
+
+{% if pf.closed %}
+<details class="closed">
+  <summary>Closed positions ({{ pf.closed|length }})</summary>
+  <table class="data compact">
+    <thead><tr><th>Instrument</th><th class="num">Realized P&amp;L</th><th class="num">Dividends</th></tr></thead>
+    <tbody>{% for c in pf.closed %}<tr><td><a href="/portfolio/instruments/{{ c.instrument.id }}">{{ c.instrument.symbol }}</a> <span class="sub">{{ c.instrument.name }}</span></td><td class="num">{{ pnl(c.realized_pnl) }}</td><td class="num">{{ c.dividends|inr }}</td></tr>{% endfor %}</tbody>
+  </table>
+</details>
+{% endif %}
+
+<div class="two-col">
+  <section aria-labelledby="alloc-h">
+    <h2 id="alloc-h">Allocation by asset class</h2>
+    {% if pf.allocation_type %}
+    <ul class="bars">{% for c in pf.allocation_type %}<li><span class="label">{{ c.name }}</span><span class="bar"><i style="width: {{ c.pct }}%"></i></span><span class="val">{{ c.value|inr }} <span class="muted">{{ c.pct }}%</span></span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nothing to allocate yet.</p>{% endif %}
+  </section>
+  <section aria-labelledby="sector-h">
+    <h2 id="sector-h">Allocation by sector</h2>
+    {% if pf.allocation_sector %}
+    <ul class="bars">{% for c in pf.allocation_sector %}<li><span class="label">{{ c.name }}</span><span class="bar"><i style="width: {{ c.pct }}%"></i></span><span class="val">{{ c.value|inr }} <span class="muted">{{ c.pct }}%</span></span></li>{% endfor %}</ul>
+    <p class="muted">Set a sector on each instrument to improve this view.</p>
+    {% else %}<p class="muted">Nothing to allocate yet.</p>{% endif %}
+  </section>
+</div>
+
+<section aria-labelledby="cash-h">
+  <h2 id="cash-h">Cash in investment accounts</h2>
+  {% if cash_rows %}
+  <table class="data compact">
+    <tbody>{% for a, bal in cash_rows %}<tr><td>{{ a.name }}</td><td class="num"><span class="amt{% if bal < 0 %} neg{% endif %}">{{ bal|inr }}</span></td></tr>{% endfor %}</tbody>
+    <tfoot><tr><th>Total</th><td class="num">{{ cash_total|inr }}</td></tr></tfoot>
+  </table>
+  {% else %}<p class="muted">No brokerage accounts yet. <a href="/finance/accounts/new">Add one</a> to track the cash behind your trades.</p>{% endif %}
+  {% if pf.account_charges %}<p class="muted">Account charges recorded to date: {{ pf.account_charges|inr }}.</p>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

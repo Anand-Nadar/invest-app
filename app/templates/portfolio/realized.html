@@ -1,0 +1,47 @@
+{% extends "portfolio/_layout.html" %}
+{% from "finance/_macros.html" import alert %}
+{% from "portfolio/_macros.html" import pnl %}
+{% block page_title %}Realized P&L{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Realized P&amp;L</h1>
+  <p class="lede">Gains and losses on units you have sold, by Indian financial year (April to March).</p>
+</header>
+{{ alert(error) }}
+
+<div class="month-nav">
+  <a href="/portfolio/realized?fy={{ prev_fy }}">Previous year</a>
+  <strong>{{ fy_label }}</strong>
+  <a href="/portfolio/realized?fy={{ next_fy }}">Next year</a>
+  <span class="muted spacer"><a href="/portfolio/realized/export.csv?fy={{ fy }}">Export CSV</a></span>
+</div>
+
+<dl class="facts big">
+  <div><dt>Sale proceeds</dt><dd class="amt">{{ proceeds|inr }}</dd></div>
+  <div><dt>Cost of units sold</dt><dd class="amt">{{ cost|inr }}</dd></div>
+  <div><dt>Realized P&amp;L</dt><dd>{{ pnl(pnl_total) }}</dd></div>
+  <div><dt>Dividends received</dt><dd class="amt">{{ dividends|inr }}</dd></div>
+</dl>
+
+{% if sales %}
+<div class="table-wrap"><table class="data">
+  <thead><tr><th>Sale date</th><th>Instrument</th><th class="num">Quantity</th><th class="num">Proceeds</th><th class="num">Cost</th><th class="num">P&amp;L</th></tr></thead>
+  <tbody>
+  {% for s in sales %}
+    <tr>
+      <td class="nowrap">{{ s.date.strftime('%d %b %Y') }}</td>
+      <td>{% set inst = instruments.get(s.instrument_id) %}{% if inst %}<a href="/portfolio/instruments/{{ inst.id }}">{{ inst.symbol }}</a><div class="sub">{{ inst.name }}</div>{% endif %}</td>
+      <td class="num">{{ s.quantity|qty }}</td>
+      <td class="num">{{ s.proceeds|inr }}</td>
+      <td class="num">{{ s.cost|inr }}</td>
+      <td class="num">{{ pnl(s.pnl) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th colspan="3">Total</th><td class="num">{{ proceeds|inr }}</td><td class="num">{{ cost|inr }}</td><td class="num">{{ pnl(pnl_total) }}</td></tr></tfoot>
+</table></div>
+{% else %}
+<section class="empty"><h2>No sales in {{ fy_label }}</h2><p>Sales you record appear here with their cost and gain or loss.</p></section>
+{% endif %}
+<p class="muted">Proceeds are after selling fees; cost uses the weighted-average method. Capital gains tax in India is normally worked out on a first-in-first-out basis with holding periods, so these figures can differ from your tax statement. Treat them as performance numbers, not tax advice.</p>
+{% endblock %}

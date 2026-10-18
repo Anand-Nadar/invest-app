@@ -1,10 +1,10 @@
-"""Personal-finance logic.
+"""Personal-finance logic (Phase 2; Phase 3 adds investment cash and holdings to balances and net worth).
 
 Rules that every calculation here follows:
   * Money is Decimal, never float.
   * Transfers between your own accounts move balances but are NEVER income or expense.
   * Account balance = opening balance + all transaction effects (see _effects).
-  * Net worth = account balances + other assets - liabilities.
+  * Net worth = account balances (incl. brokerage cash) + other assets + investment holdings - liabilities.
 """
 import logging
 from collections import defaultdict
@@ -19,8 +19,11 @@ from app.models.finance import (
     ACCOUNT_TYPES, ASSET_TYPES, CATEGORY_KINDS, LIABILITY_TYPES, PAYMENT_METHODS, TX_KINDS,
     Account, Asset, Category, Liability, NetWorthSnapshot, Transaction,
 )
+from app.models.portfolio import InvestmentTransaction
+from app.services import portfolio as portfolio_svc
 from app.services.errors import ValidationError
 from app.services.periods import shift_month
+from app.services.portfolio_engine import cash_effect
 
 log = logging.getLogger(__name__)
 ZERO = Decimal("0.00")
@@ -67,11 +70,12 @@ def update_account(db, account: Account, *, name, type, opening_balance, opening
     _check_choice(type, ACCOUNT_TYPES, "account type")
     if _account_name_taken(db, name, exclude_id=account.id):
         raise ValidationError(f"An account named '{name}' already exists.")
-    earliest = db.scalar(
-        select(func.min(Transaction.date)).where(
-            or_(Transaction.account_id == account.id, Transaction.to_account_id == account.id)
-        )
-    )
+    earliest_dates = [
+        db.scalar(select(func.min(Transaction.date)).where(
+            or_(Transaction.account_id == account.id, Transaction.to_account_id == account.id))),
+        db.scalar(select(func.min(InvestmentTransaction.date)).where(InvestmentTransaction.account_id == account.id)),
+    ]
+    earliest = min((d for d in earliest_dates if d), default=None)
     if earliest and earliest < opening_date:
         raise ValidationError(
             f"This account has transactions from {earliest:%d %b %Y}. "
@@ -92,7 +96,7 @@ def delete_account(db, account: Account) -> None:
         select(func.count(Transaction.id)).where(
             or_(Transaction.account_id == account.id, Transaction.to_account_id == account.id)
         )
-    )
+    ) + db.scalar(select(func.count(InvestmentTransaction.id)).where(InvestmentTransaction.account_id == account.id))
     if n:
         raise ValidationError(
             f"'{account.name}' has {n} transaction{'s' if n != 1 else ''}. Deactivate it instead of deleting."
@@ -302,6 +306,14 @@ def account_balances(db: Session) -> dict[int, Decimal]:
     for kind, amount, account_id, to_account_id in rows:
         for acc_id, delta in _effects(kind, Decimal(amount), account_id, to_account_id):
             balances[acc_id] += delta
+    # Investment buys/sells/dividends/fees move cash through their account (see portfolio_engine.cash_effect)
+    inv_rows = db.execute(
+        select(InvestmentTransaction.kind, InvestmentTransaction.account_id, InvestmentTransaction.quantity,
+               InvestmentTransaction.price, InvestmentTransaction.fees, InvestmentTransaction.amount)
+        .where(InvestmentTransaction.account_id.is_not(None))
+    )
+    for kind, acc_id, qty, price, fees, amount in inv_rows:
+        balances[acc_id] += cash_effect(kind, qty, price, fees, amount)
     return balances
 
 
@@ -428,14 +440,15 @@ class NetWorth:
     accounts_total: Decimal
     other_assets: Decimal
     total_liabilities: Decimal
+    investments_value: Decimal = ZERO  # market value of stocks/funds (unpriced holdings at cost)
 
     @property
     def net_worth(self) -> Decimal:
-        return self.accounts_total + self.other_assets - self.total_liabilities
+        return self.accounts_total + self.other_assets + self.investments_value - self.total_liabilities
 
     @property
     def total_assets(self) -> Decimal:
-        return self.accounts_total + self.other_assets
+        return self.accounts_total + self.other_assets + self.investments_value
 
 
 def net_worth(db: Session) -> NetWorth:
@@ -449,6 +462,7 @@ def net_worth(db: Session) -> NetWorth:
         accounts_total=sum((b for _a, b in rows), ZERO),
         other_assets=sum((Decimal(a.value) for a in assets), ZERO),
         total_liabilities=sum((Decimal(l.outstanding) for l in liabilities), ZERO),
+        investments_value=portfolio_svc.holdings_value(db),
     )
 
 
@@ -459,6 +473,7 @@ def record_snapshot(db: Session, on: date) -> NetWorthSnapshot:
         snapshot_date=on
     )
     snap.accounts_total, snap.other_assets = nw.accounts_total, nw.other_assets
+    snap.investments_value = nw.investments_value
     snap.liabilities, snap.net_worth = nw.total_liabilities, nw.net_worth
     return _commit(db, snap)
 
