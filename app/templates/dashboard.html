@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ settings.app_name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Dashboard</h1>
+  <p class="lede">Your accounts, investments and research will come together here. The foundation is in place; Phase 2 adds your first accounts.</p>
+</header>
+
+<section aria-labelledby="empty-h" class="empty">
+  <h2 id="empty-h">No accounts yet</h2>
+  <p>Net worth, monthly savings and investable cash appear once you add bank balances and income in Phase 2.</p>
+</section>
+
+<section aria-labelledby="sys-h">
+  <h2 id="sys-h">System status</h2>
+  <dl class="facts">
+    <div>
+      <dt>Database</dt>
+      <dd>
+        {% if system.database_ok %}<span class="pill ok">Connected</span>
+        {% else %}<span class="pill bad">Unavailable</span>{% endif %}
+      </dd>
+    </div>
+    <div>
+      <dt>Schema</dt>
+      <dd>
+        {% if system.migrations_current %}<span class="pill ok">Up to date</span> <code>{{ system.schema_revision }}</code>
+        {% elif system.schema_revision %}<span class="pill warn">Behind</span> run <code>alembic upgrade head</code>
+        {% else %}<span class="pill warn">Not initialised</span> run <code>alembic upgrade head</code>{% endif %}
+      </dd>
+    </div>
+    <div>
+      <dt>Environment</dt>
+      <dd>{{ settings.environment }}</dd>
+    </div>
+  </dl>
+</section>
+
+<section aria-labelledby="road-h">
+  <h2 id="road-h">Roadmap</h2>
+  <ol class="ledger">
+    {% for p in phases %}
+    <li class="row {{ p.status }}">
+      <span class="num">{{ p.number }}</span>
+      <div class="what">
+        <h3>{% if p.nav_label and p.status != 'planned' %}<a href="/{{ p.slug }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}</h3>
+        <p>{{ p.summary }}</p>
+      </div>
+      <span class="state">{% if p.status == 'done' %}Complete{% elif p.status == 'next' %}Up next{% else %}Planned{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
+{% endblock %}

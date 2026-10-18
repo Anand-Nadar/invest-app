@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - {{ settings.app_name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>{{ code }}</h1>
+  <p class="lede">{{ message }}</p>
+</header>
+<p><a href="/">Go to the dashboard</a></p>
+{% endblock %}

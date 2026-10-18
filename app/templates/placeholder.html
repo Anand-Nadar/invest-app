@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ phase.nav_label }} - {{ settings.app_name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>{{ phase.title }}</h1>
+  <p class="lede">{{ phase.summary }}.</p>
+</header>
+<section class="empty">
+  <h2>Built in Phase {{ phase.number }}</h2>
+  <p>This section is not available yet. Return to the <a href="/">dashboard</a> to see roadmap progress.</p>
+</section>
+{% endblock %}
