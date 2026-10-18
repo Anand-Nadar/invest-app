@@ -46,3 +46,19 @@ def test_models_match_migrations(tmp_path):
 
 def test_single_migration_head():
     assert alembic_head() is not None
+
+
+def test_starter_categories_are_seeded(tmp_path):
+    from sqlalchemy import text
+
+    url = f"sqlite:///{tmp_path / 'seed.db'}"
+    command.upgrade(_cfg(url), "head")
+    eng = make_engine(url)
+    with eng.connect() as conn:
+        names = {r[0] for r in conn.execute(text("SELECT name FROM categories"))}
+        parents = conn.execute(
+            text("SELECT c.name FROM categories c JOIN categories p ON c.parent_id = p.id WHERE p.name = 'Food'")
+        ).scalars().all()
+    eng.dispose()
+    assert {"Salary", "Housing", "Rent", "Groceries"} <= names
+    assert sorted(parents) == ["Dining out", "Groceries"]

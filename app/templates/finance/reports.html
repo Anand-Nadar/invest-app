@@ -1,0 +1,57 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import money %}
+{% block page_title %}Reports{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Reports</h1>
+  <p class="lede">Month-by-month income, spending and savings for an Indian financial year (April to March).</p>
+</header>
+
+<div class="month-nav">
+  <a href="/finance/reports?fy={{ prev_fy }}">Previous year</a>
+  <strong>{{ fy_label }}</strong>
+  <a href="/finance/reports?fy={{ next_fy }}">Next year</a>
+  <span class="muted spacer">Export: <a href="/finance/reports/export.csv?fy={{ fy }}">CSV</a>, <a href="/finance/reports/export.xlsx?fy={{ fy }}">Excel</a></span>
+</div>
+
+<div class="table-wrap">
+<table class="data">
+  <thead><tr><th>Month</th><th class="num">Income</th><th class="num">Expenses</th><th class="num">Net savings</th><th class="num">Savings rate</th><th>Income and expenses</th></tr></thead>
+  <tbody>
+  {% for d, m in months %}
+    <tr>
+      <td class="nowrap">{{ d|month_label }}</td>
+      <td class="num">{{ m.income|inr }}</td>
+      <td class="num">{{ m.expenses|inr }}</td>
+      <td class="num">{{ money(m.net_savings) }}</td>
+      <td class="num">{{ m.savings_rate|pct }}</td>
+      <td class="pair">
+        <span class="bar inc"><i style="width: {{ (m.income / peak * 100)|round(1) }}%"></i></span>
+        <span class="bar exp"><i style="width: {{ (m.expenses / peak * 100)|round(1) }}%"></i></span>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th>{{ fy_label }}</th><td class="num">{{ total.income|inr }}</td><td class="num">{{ total.expenses|inr }}</td><td class="num">{{ money(total.net_savings) }}</td><td class="num">{{ total.savings_rate|pct }}</td><td></td></tr></tfoot>
+</table>
+</div>
+<p class="muted">Transfers between your accounts are excluded. Savings rate is net savings as a share of income.</p>
+
+<div class="two-col">
+{% for title, items in [("Spending by category", expense_breakdown), ("Income by source", income_breakdown)] %}
+  <section>
+    <h2>{{ title }}</h2>
+    {% if items %}
+    <ul class="bars">
+      {% for c in items %}
+      <li>
+        <span class="label">{{ c.name }}</span><span class="bar"><i style="width: {{ c.pct }}%"></i></span><span class="val">{{ c.amount|inr }}</span>
+        {% if c.children %}<ul class="subs">{% for ch in c.children %}<li><span>{{ ch.name }}</span><span>{{ ch.amount|inr }}</span></li>{% endfor %}</ul>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">Nothing recorded in {{ fy_label }}.</p>{% endif %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

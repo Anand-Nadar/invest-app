@@ -1,4 +1,5 @@
 """Database engine and session handling (SQLAlchemy 2.x, SQLite by default)."""
+import warnings
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -7,6 +8,9 @@ from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import get_settings
+
+# SQLite has no native Decimal; SQLAlchemy converts via float and rounds to the column scale (2 dp).
+warnings.filterwarnings("ignore", message=".*does not support Decimal objects natively.*")
 
 
 def make_engine(url: str, **kwargs) -> Engine:

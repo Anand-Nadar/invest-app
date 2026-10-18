@@ -1,0 +1,18 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field, select_field, notes_field %}
+{% block page_title %}{{ 'Edit account' if account else 'Add account' }}{% endblock %}
+{% block body %}
+<header class="page-head"><h1>{{ 'Edit account' if account else 'Add account' }}</h1></header>
+{{ alert(error) }}
+<form method="post" class="card form-grid">
+  {{ text_field("Name", "name", values, required=true) }}
+  {{ select_field("Type", "type", values, account_types) }}
+  {{ text_field("Opening balance", "opening_balance", values, mode="decimal", hint="Use a negative number for a credit card you owe money on.") }}
+  {{ text_field("Opening date", "opening_date", values, type="date", required=true, hint="Balance as of this date. Transactions can't be dated earlier.") }}
+  {{ notes_field(values) }}
+  <div class="form-actions">
+    <button class="btn" type="submit">Save account</button>
+    <a href="/finance/accounts">Cancel</a>
+  </div>
+</form>
+{% endblock %}

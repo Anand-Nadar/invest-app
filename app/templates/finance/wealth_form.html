@@ -1,0 +1,18 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field, notes_field %}
+{% block page_title %}{{ 'Edit' if obj else 'Add' }} {{ noun }}{% endblock %}
+{% block body %}
+<header class="page-head"><h1>{{ 'Edit' if obj else 'Add' }} {{ noun }}</h1></header>
+{{ alert(error) }}
+<form method="post" class="card form-grid">
+  {{ text_field("Name", "name", values, required=true) }}
+  <label class="field"><span>Type</span>
+    <select name="type">{% for k, l in types %}<option value="{{ k }}"{% if values.get('type') == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </label>
+  {{ text_field(amount_label ~ " (₹)", "amount", values, required=true, mode="decimal") }}
+  {% if kind == 'liabilities' %}{{ text_field("Interest rate (% per year)", "interest_rate", values, mode="decimal") }}{% endif %}
+  {{ text_field("Valued on", "as_of", values, type="date", required=true) }}
+  {{ notes_field(values) }}
+  <div class="form-actions"><button class="btn" type="submit">Save {{ noun }}</button><a href="/finance/wealth">Cancel</a></div>
+</form>
+{% endblock %}

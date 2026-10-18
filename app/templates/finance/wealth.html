@@ -1,0 +1,78 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import money %}
+{% block page_title %}Net worth{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Net worth</h1>
+  <p class="lede">Account balances plus other assets, minus what you owe. Stocks and mutual funds join this view in Phase 3.</p>
+</header>
+
+<dl class="facts big">
+  <div><dt>Net worth</dt><dd class="amt{% if nw.net_worth < 0 %} neg{% endif %}">{{ nw.net_worth|inr }}</dd></div>
+  <div><dt>Cash and bank accounts</dt><dd class="amt">{{ nw.accounts_total|inr }}</dd></div>
+  <div><dt>Other assets</dt><dd class="amt">{{ nw.other_assets|inr }}</dd></div>
+  <div><dt>Liabilities</dt><dd class="amt">{{ nw.total_liabilities|inr }}</dd></div>
+</dl>
+<p class="muted">Account balances come from <a href="/finance/accounts">Accounts</a>. Assets and liabilities below are values you keep up to date yourself.</p>
+
+<section>
+  <div class="section-head"><h2>Other assets</h2><a class="btn" href="/finance/wealth/assets/new">Add asset</a></div>
+  {% if nw.assets %}
+  <div class="table-wrap"><table class="data">
+    <thead><tr><th>Name</th><th>Type</th><th>Valued on</th><th class="num">Value</th><th><span class="sr">Actions</span></th></tr></thead>
+    <tbody>
+    {% for a in nw.assets %}
+      <tr><td>{{ a.name }}</td><td>{{ asset_types.get(a.type, a.type) }}</td><td class="nowrap">{{ a.as_of.strftime('%d %b %Y') }}</td><td class="num">{{ a.value|inr }}</td>
+        <td class="actions"><a href="/finance/wealth/assets/{{ a.id }}/edit">Edit</a>
+          <form method="post" action="/finance/wealth/assets/{{ a.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ a.name ~ "?")|tojson }})'><button class="link danger">Delete</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">No other assets. Add property, gold, EPF or fixed deposits to include them.</p>{% endif %}
+</section>
+
+<section>
+  <div class="section-head"><h2>Liabilities</h2><a class="btn" href="/finance/wealth/liabilities/new">Add liability</a></div>
+  {% if nw.liabilities %}
+  <div class="table-wrap"><table class="data">
+    <thead><tr><th>Name</th><th>Type</th><th>Valued on</th><th class="num">Rate</th><th class="num">Outstanding</th><th><span class="sr">Actions</span></th></tr></thead>
+    <tbody>
+    {% for l in nw.liabilities %}
+      <tr><td>{{ l.name }}</td><td>{{ liability_types.get(l.type, l.type) }}</td><td class="nowrap">{{ l.as_of.strftime('%d %b %Y') }}</td>
+        <td class="num">{{ l.interest_rate|pct if l.interest_rate is not none else '-' }}</td><td class="num">{{ l.outstanding|inr }}</td>
+        <td class="actions"><a href="/finance/wealth/liabilities/{{ l.id }}/edit">Edit</a>
+          <form method="post" action="/finance/wealth/liabilities/{{ l.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ l.name ~ "?")|tojson }})'><button class="link danger">Delete</button></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">No liabilities recorded.</p>{% endif %}
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>History</h2>
+    <form method="post" action="/finance/wealth/snapshot"><button class="btn" type="submit">Record today's snapshot</button></form>
+  </div>
+  {% if snaps %}
+    {% if snaps|length > 1 %}
+    <figure class="chart">
+      <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="Net worth over time, from {{ chart.min|inr(0) }} to {{ chart.max|inr(0) }}">
+        <polyline points="{{ chart.points }}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        {% for x, y in chart.dots %}<circle cx="{{ x }}" cy="{{ y }}" r="3.5" fill="currentColor"/>{% endfor %}
+      </svg>
+      <figcaption class="muted">Lowest {{ chart.min|inr(0) }}, highest {{ chart.max|inr(0) }}</figcaption>
+    </figure>
+    {% endif %}
+    <div class="table-wrap"><table class="data compact">
+      <thead><tr><th>Date</th><th class="num">Accounts</th><th class="num">Other assets</th><th class="num">Liabilities</th><th class="num">Net worth</th></tr></thead>
+      <tbody>
+      {% for s in snaps|reverse %}
+        <tr><td class="nowrap">{{ s.snapshot_date.strftime('%d %b %Y') }}</td><td class="num">{{ s.accounts_total|inr }}</td><td class="num">{{ s.other_assets|inr }}</td><td class="num">{{ s.liabilities|inr }}</td><td class="num">{{ money(s.net_worth) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}
+  <p class="muted">No snapshots yet. Record one now, then again each month to see how your net worth changes.</p>
+  {% endif %}
+</section>
+{% endblock %}

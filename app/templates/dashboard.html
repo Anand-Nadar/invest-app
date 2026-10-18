@@ -3,13 +3,26 @@
 {% block content %}
 <header class="page-head">
   <h1>Dashboard</h1>
-  <p class="lede">Your accounts, investments and research will come together here. The foundation is in place; Phase 2 adds your first accounts.</p>
+  <p class="lede">Your accounts, investments and research will come together here. Phases 1 and 2 are complete: add accounts and record income and expenses in Finance.</p>
 </header>
 
+{% if has_accounts %}
+<section aria-labelledby="fin-h">
+  <h2 id="fin-h">Your finances</h2>
+  <dl class="facts big">
+    <div><dt>Net worth</dt><dd class="amt{% if nw.net_worth < 0 %} neg{% endif %}">{{ nw.net_worth|inr }}</dd></div>
+    <div><dt>Income this month</dt><dd class="amt pos">{{ month.income|inr }}</dd></div>
+    <div><dt>Expenses this month</dt><dd class="amt">{{ month.expenses|inr }}</dd></div>
+    <div><dt>Savings rate</dt><dd class="amt">{{ month.savings_rate|pct }}</dd></div>
+  </dl>
+  <p><a href="/finance">Open finance</a></p>
+</section>
+{% else %}
 <section aria-labelledby="empty-h" class="empty">
   <h2 id="empty-h">No accounts yet</h2>
-  <p>Net worth, monthly savings and investable cash appear once you add bank balances and income in Phase 2.</p>
+  <p>Net worth, monthly savings and investable cash appear once you add a bank account and record income. <a href="/finance/accounts/new">Add your first account</a>.</p>
 </section>
+{% endif %}
 
 <section aria-labelledby="sys-h">
   <h2 id="sys-h">System status</h2>

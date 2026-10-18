@@ -1,0 +1,84 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field, notes_field %}
+{% block page_title %}{{ 'Edit transaction' if tx else 'Add transaction' }}{% endblock %}
+{% block body %}
+<header class="page-head"><h1>{{ 'Edit transaction' if tx else 'Add transaction' }}</h1></header>
+{{ alert(error) }}
+{% if not accounts %}
+<section class="empty"><h2>Add an account first</h2><p><a href="/finance/accounts/new">Add an account</a> before recording transactions.</p></section>
+{% else %}
+<form method="post" class="card form-grid" id="tx-form">
+  <fieldset class="field wide kind-pick">
+    <legend>Type</legend>
+    {% for k in kinds %}
+    <label><input type="radio" name="kind" value="{{ k }}"{% if values.get('kind') == k %} checked{% endif %}> {{ k|capitalize }}</label>
+    {% endfor %}
+  </fieldset>
+  {{ text_field("Date", "date", values, type="date", required=true) }}
+  {{ text_field("Amount (₹)", "amount", values, required=true, mode="decimal") }}
+  <label class="field">
+    <span id="account-label">Account</span>
+    <select name="account_id" required>
+      <option value="">Choose account</option>
+      {% for a in accounts %}<option value="{{ a.id }}"{% if values.get('account_id')|string == a.id|string %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field" data-show="transfer">
+    <span>To account</span>
+    <select name="to_account_id">
+      <option value="">Choose account</option>
+      {% for a in accounts %}<option value="{{ a.id }}"{% if values.get('to_account_id')|string == a.id|string %} selected{% endif %}>{{ a.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="field" data-show="category">
+    <span>Category</span>
+    <select name="category_id" id="category">
+      <option value="">Choose category</option>
+      {% for c in categories %}<option value="{{ c.id }}" data-kind="{{ c.kind }}"{% if values.get('category_id')|string == c.id|string %} selected{% endif %}>{{ c.label }}</option>{% endfor %}
+    </select>
+  </label>
+  {{ text_field("Merchant or payer", "merchant", values) }}
+  <label class="field">
+    <span>Payment method</span>
+    <select name="payment_method">
+      <option value="">Not specified</option>
+      {% for m in payment_methods %}<option value="{{ m }}"{% if values.get('payment_method') == m %} selected{% endif %}>{{ m }}</option>{% endfor %}
+    </select>
+  </label>
+  {{ notes_field(values) }}
+  <div class="form-actions">
+    <button class="btn" type="submit">Save transaction</button>
+    <a href="/finance/transactions?period=all">Cancel</a>
+  </div>
+</form>
+
+{% if tx %}
+<form method="post" action="/finance/transactions/{{ tx.id }}/delete" class="danger-zone" onsubmit="return confirm('Delete this transaction? Balances will update.')">
+  <button class="btn danger" type="submit">Delete transaction</button>
+</form>
+{% endif %}
+
+<script>
+  (function () {
+    var form = document.getElementById('tx-form');
+    if (!form) return;
+    var cat = document.getElementById('category');
+    function sync() {
+      var kind = form.querySelector('input[name=kind]:checked');
+      kind = kind ? kind.value : 'expense';
+      form.querySelector('[data-show=transfer]').hidden = kind !== 'transfer';
+      form.querySelector('[data-show=category]').hidden = kind === 'transfer';
+      document.getElementById('account-label').textContent = kind === 'transfer' ? 'From account' : 'Account';
+      Array.prototype.forEach.call(cat.options, function (o) {
+        if (!o.dataset.kind) return;
+        var off = o.dataset.kind !== kind;
+        o.hidden = off; o.disabled = off;
+      });
+      if (cat.selectedOptions[0] && cat.selectedOptions[0].disabled) cat.value = '';
+    }
+    form.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+{% endif %}
+{% endblock %}

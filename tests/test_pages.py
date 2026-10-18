@@ -13,8 +13,8 @@ def test_dashboard_renders(client):
     assert "Roadmap" in r.text
 
 
-@pytest.mark.parametrize("phase", NAV_PHASES, ids=lambda p: p.slug)
-def test_every_nav_section_renders(client, phase):
+@pytest.mark.parametrize("phase", [p for p in NAV_PHASES if p.status != "done"], ids=lambda p: p.slug)
+def test_unbuilt_sections_show_placeholder(client, phase):
     r = client.get(f"/{phase.slug}")
     assert r.status_code == 200
     assert f"Built in Phase {phase.number}" in r.text

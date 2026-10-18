@@ -1,0 +1,39 @@
+{% macro money(v) -%}<span class="amt{% if v < 0 %} neg{% endif %}">{{ v|inr }}</span>{%- endmacro %}
+
+{% macro alert(error) -%}{% if error %}<p class="alert" role="alert">{{ error }}</p>{% endif %}{%- endmacro %}
+
+{% macro text_field(label, name, values, type="text", required=false, hint="", mode="", list="") -%}
+<label class="field">
+  <span>{{ label }}</span>
+  <input type="{{ type }}" name="{{ name }}" value="{{ values.get(name, '') }}"{% if required %} required{% endif %}{% if mode %} inputmode="{{ mode }}"{% endif %}{% if list %} list="{{ list }}"{% endif %}>
+  {% if hint %}<small>{{ hint }}</small>{% endif %}
+</label>
+{%- endmacro %}
+
+{% macro select_field(label, name, values, options, blank="") -%}
+<label class="field">
+  <span>{{ label }}</span>
+  <select name="{{ name }}">
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for val, text in options %}<option value="{{ val }}"{% if values.get(name, '')|string == val|string %} selected{% endif %}>{{ text }}</option>{% endfor %}
+  </select>
+</label>
+{%- endmacro %}
+
+{% macro notes_field(values) -%}
+<label class="field wide">
+  <span>Notes</span>
+  <textarea name="notes" rows="2" maxlength="500">{{ values.get('notes', '') }}</textarea>
+</label>
+{%- endmacro %}
+
+{% macro tx_amount(t) -%}
+{% if t.kind == 'income' %}<span class="amt pos">{{ t.amount|inr }}</span>
+{%- elif t.kind == 'expense' %}<span class="amt neg">{{ (-t.amount)|inr }}</span>
+{%- else %}<span class="amt muted">{{ t.amount|inr }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro tx_what(t) -%}
+{% if t.kind == 'transfer' %}Transfer to {{ t.to_account.name }}
+{%- else %}{% if t.category %}{% if t.category.parent %}{{ t.category.parent.name }} &gt; {% endif %}{{ t.category.name }}{% endif %}{% endif %}
+{%- endmacro %}

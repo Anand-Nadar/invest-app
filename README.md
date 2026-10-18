@@ -7,8 +7,9 @@ Built in 8 phases; each phase ships something usable. See the roadmap in `app/ro
 | Phase | Status |
 | --- | --- |
 | 1 Foundation & setup | Complete |
-| 2 Personal finance & wealth | Next |
-| 3-8 | Planned |
+| 2 Personal finance & wealth | Complete |
+| 3 Investment portfolio | Next |
+| 4-8 | Planned |
 
 ## Setup
 
@@ -24,11 +25,25 @@ alembic upgrade head        # creates data/invest.db
 ## Run
 
 ```bash
-uvicorn app.main:app --reload
+python run.py
 ```
 
-Open http://127.0.0.1:8000. Health check: http://127.0.0.1:8000/health.
+Open http://127.0.0.1:8100. Health check: http://127.0.0.1:8100/health.
+Change the port with `INVEST_PORT=9000 python run.py` or in `.env`.
 In VS Code use the "Invest App (uvicorn, reload)" launch configuration.
+
+## Phase 2 features (Finance)
+
+- Accounts (bank, cash, wallet, credit card) with balances derived from the ledger
+- Income, expense and transfer transactions; merchants, payment methods, notes
+- Categories with subcategories (starter set is seeded by the migration)
+- Filters (date presets incl. Indian financial year, type, account, category, text), pagination
+- CSV and Excel export of transactions and the monthly report
+- Assets, liabilities, net worth and dated net-worth snapshots
+- Monthly and financial-year reports with category breakdowns
+
+Rules: amounts are `Decimal`; **transfers never count as income or expense**; a transaction can't be dated
+before its account's opening date; accounts with transactions can be deactivated but not deleted.
 
 ## Test
 

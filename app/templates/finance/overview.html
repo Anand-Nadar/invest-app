@@ -1,0 +1,70 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import money, tx_amount, tx_what %}
+{% block page_title %}Finance{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Finance</h1>
+  <p class="lede">Income, spending and net worth in one place. Transfers between your own accounts are never counted as income or expenses.</p>
+</header>
+
+{% if not has_accounts %}
+<section class="empty">
+  <h2>Add your first account</h2>
+  <p>Start with the bank account you use most, with today's balance as the opening balance. Then record income and expenses against it.</p>
+  <p><a class="btn" href="/finance/accounts/new">Add account</a></p>
+</section>
+{% else %}
+<div class="month-nav">
+  <a href="/finance?month={{ prev_month }}" aria-label="Previous month">Previous</a>
+  <strong>{{ month_first|month_label }}</strong>
+  {% if not is_current_month %}<a href="/finance?month={{ next_month }}" aria-label="Next month">Next</a>{% endif %}
+</div>
+
+<dl class="facts big">
+  <div><dt>Income</dt><dd class="amt pos">{{ summary.income|inr }}</dd></div>
+  <div><dt>Expenses</dt><dd class="amt">{{ summary.expenses|inr }}</dd></div>
+  <div><dt>Net savings</dt><dd class="amt{% if summary.net_savings < 0 %} neg{% endif %}">{{ summary.net_savings|inr }}</dd></div>
+  <div><dt>Savings rate</dt><dd class="amt">{{ summary.savings_rate|pct }}</dd></div>
+</dl>
+
+<section aria-labelledby="nw-h">
+  <h2 id="nw-h">Net worth</h2>
+  <p class="nw-line"><span class="amt big{% if nw.net_worth < 0 %} neg{% endif %}">{{ nw.net_worth|inr }}</span>
+    <span class="muted">{{ nw.total_assets|inr }} in assets and accounts, less {{ nw.total_liabilities|inr }} owed. <a href="/finance/wealth">See breakdown</a></span></p>
+</section>
+
+<div class="two-col">
+  <section aria-labelledby="top-h">
+    <h2 id="top-h">Where the money went</h2>
+    {% if top_expenses %}
+    <ul class="bars">
+      {% for c in top_expenses %}
+      <li><span class="label">{{ c.name }}</span><span class="bar"><i style="width: {{ c.pct }}%"></i></span><span class="val">{{ c.amount|inr }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted">No expenses recorded in {{ month_first|month_label }}.</p>{% endif %}
+  </section>
+
+  <section aria-labelledby="recent-h">
+    <h2 id="recent-h">Recent transactions</h2>
+    {% if recent %}
+    <table class="data compact">
+      <tbody>
+      {% for t in recent %}
+        <tr>
+          <td class="nowrap">{{ t.date.strftime('%d %b') }}</td>
+          <td>{{ t.merchant or tx_what(t) }}</td>
+          <td class="num">{{ tx_amount(t) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p><a href="/finance/transactions?period=all">All transactions</a></p>
+    {% else %}
+    <p class="muted">Nothing recorded yet.</p>
+    {% endif %}
+    <p><a class="btn" href="/finance/transactions/new">Add transaction</a></p>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

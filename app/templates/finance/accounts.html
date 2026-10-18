@@ -1,0 +1,36 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import money, alert %}
+{% block page_title %}Accounts{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Accounts</h1>
+  <p class="lede">Bank accounts, cash, wallets and credit cards. A balance is the opening balance plus everything recorded since.</p>
+</header>
+{{ alert(error) }}
+<p><a class="btn" href="/finance/accounts/new">Add account</a></p>
+{% if nw.account_rows %}
+<div class="table-wrap">
+<table class="data">
+  <thead><tr><th>Account</th><th>Type</th><th class="num">Balance</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+  <tbody>
+  {% for a, bal in nw.account_rows %}
+    <tr{% if not a.is_active %} class="inactive"{% endif %}>
+      <td>{{ a.name }}</td>
+      <td>{{ a.type|replace('_', ' ')|capitalize }}</td>
+      <td class="num">{{ money(bal) }}</td>
+      <td>{{ 'Active' if a.is_active else 'Inactive' }}</td>
+      <td class="actions">
+        <a href="/finance/accounts/{{ a.id }}/edit">Edit</a>
+        <form method="post" action="/finance/accounts/{{ a.id }}/toggle"><button class="link">{{ 'Deactivate' if a.is_active else 'Reactivate' }}</button></form>
+        <form method="post" action="/finance/accounts/{{ a.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ a.name ~ "? This cannot be undone.")|tojson }})'><button class="link danger">Delete</button></form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th colspan="2">Total</th><td class="num">{{ money(nw.accounts_total) }}</td><td colspan="2"></td></tr></tfoot>
+</table>
+</div>
+{% else %}
+<section class="empty"><h2>No accounts yet</h2><p>Add an account to start recording transactions.</p></section>
+{% endif %}
+{% endblock %}

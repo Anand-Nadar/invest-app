@@ -1,0 +1,59 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import alert, text_field %}
+{% block page_title %}Categories{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Categories</h1>
+  <p class="lede">Group income and spending. Each category can have subcategories; reports roll them up into the parent.</p>
+</header>
+{{ alert(error) }}
+<form method="post" action="/finance/categories" class="card form-grid inline-add">
+  {{ text_field("Name", "name", values, required=true) }}
+  <label class="field"><span>Type</span>
+    <select name="kind">
+      <option value="expense"{% if values.get('kind') == 'expense' %} selected{% endif %}>Expense</option>
+      <option value="income"{% if values.get('kind') == 'income' %} selected{% endif %}>Income</option>
+    </select>
+    <small>Ignored when you pick a parent.</small>
+  </label>
+  <label class="field"><span>Parent category</span>
+    <select name="parent_id">
+      <option value="">None (top level)</option>
+      {% for c in expense + income %}<option value="{{ c.id }}"{% if values.get('parent_id')|string == c.id|string %} selected{% endif %}>{{ c.name }} ({{ c.kind }})</option>{% endfor %}
+    </select>
+  </label>
+  <div class="form-actions"><button class="btn" type="submit">Add category</button></div>
+</form>
+
+<div class="two-col">
+{% for title, cats in [("Expense categories", expense), ("Income categories", income)] %}
+  <section>
+    <h2>{{ title }}</h2>
+    <ul class="tree">
+    {% for c in cats %}
+      <li>
+        <form method="post" action="/finance/categories/{{ c.id }}/rename" class="row-form">
+          <input type="text" name="name" value="{{ c.name }}" aria-label="Category name" maxlength="100">
+          <button class="link">Rename</button>
+        </form>
+        <form method="post" action="/finance/categories/{{ c.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ c.name ~ "?")|tojson }})'><button class="link danger">Delete</button></form>
+        {% if c.children %}
+        <ul>
+          {% for ch in c.children %}
+          <li>
+            <form method="post" action="/finance/categories/{{ ch.id }}/rename" class="row-form">
+              <input type="text" name="name" value="{{ ch.name }}" aria-label="Subcategory name" maxlength="100">
+              <button class="link">Rename</button>
+            </form>
+            <form method="post" action="/finance/categories/{{ ch.id }}/delete" onsubmit='return confirm({{ ("Delete " ~ ch.name ~ "?")|tojson }})'><button class="link danger">Delete</button></form>
+          </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

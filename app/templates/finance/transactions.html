@@ -1,0 +1,83 @@
+{% extends "finance/_layout.html" %}
+{% from "finance/_macros.html" import tx_amount, tx_what %}
+{% block page_title %}Transactions{% endblock %}
+{% block body %}
+<header class="page-head">
+  <h1>Transactions</h1>
+  <p class="lede">Every income, expense and transfer. Filter by date, type, account, category or text.</p>
+</header>
+
+{% if not has_accounts %}
+<section class="empty"><h2>Add an account first</h2><p>Transactions are recorded against an account. <a href="/finance/accounts/new">Add an account</a>.</p></section>
+{% else %}
+<form class="filters" method="get" action="/finance/transactions">
+  <label class="field"><span>Period</span>
+    <select name="period" id="f-period">{% for k, l in presets %}<option value="{{ k }}"{% if view.preset == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>From</span><input type="date" name="start" value="{{ view.filter.start.isoformat() if view.filter.start else '' }}" data-custom></label>
+  <label class="field"><span>To</span><input type="date" name="end" value="{{ view.filter.end.isoformat() if view.filter.end else '' }}" data-custom></label>
+  <label class="field"><span>Type</span>
+    <select name="kind"><option value="">All types</option>{% for k in kinds %}<option value="{{ k }}"{% if view.filter.kind == k %} selected{% endif %}>{{ k|capitalize }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>Account</span>
+    <select name="account_id"><option value="">All accounts</option>{% for a in accounts %}<option value="{{ a.id }}"{% if view.filter.account_id == a.id %} selected{% endif %}>{{ a.name }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>Category</span>
+    <select name="category_id"><option value="">All categories</option>{% for c in categories %}<option value="{{ c.id }}"{% if view.filter.category_id == c.id %} selected{% endif %}>{{ c.label }}</option>{% endfor %}</select>
+  </label>
+  <label class="field"><span>Search</span><input type="search" name="q" value="{{ view.filter.q or '' }}" placeholder="Merchant or notes"></label>
+  <div class="form-actions"><button class="btn" type="submit">Apply filters</button></div>
+</form>
+<script>
+  (function () {
+    var p = document.getElementById('f-period');
+    document.querySelectorAll('[data-custom]').forEach(function (el) {
+      el.addEventListener('change', function () { p.value = 'custom'; });
+    });
+  })();
+</script>
+
+<div class="toolbar">
+  <a class="btn" href="/finance/transactions/new">Add transaction</a>
+  <span class="muted">Export:
+    <a href="/finance/transactions/export.csv?{{ qs }}">CSV</a>,
+    <a href="/finance/transactions/export.xlsx?{{ qs }}">Excel</a></span>
+</div>
+
+<p class="summary-line">{{ total }} transaction{{ '' if total == 1 else 's' }}.
+  Income <span class="amt pos">{{ income|inr }}</span>,
+  expenses <span class="amt">{{ expenses|inr }}</span>.
+  <span class="muted">Transfers are excluded from these totals.</span></p>
+
+{% if rows %}
+<div class="table-wrap">
+<table class="data">
+  <thead><tr><th>Date</th><th>Details</th><th>Account</th><th class="num">Amount</th><th><span class="sr">Actions</span></th></tr></thead>
+  <tbody>
+  {% for t in rows %}
+    <tr>
+      <td class="nowrap">{{ t.date.strftime('%d %b %Y') }}</td>
+      <td>
+        <div>{{ t.merchant or tx_what(t) }}</div>
+        <div class="sub">{% if t.merchant %}{{ tx_what(t) }}{% endif %}{% if t.payment_method %}{% if t.merchant %}, {% endif %}{{ t.payment_method }}{% endif %}{% if t.notes %}{% if t.merchant or t.payment_method %}. {% endif %}{{ t.notes }}{% endif %}</div>
+      </td>
+      <td>{{ t.account.name }}</td>
+      <td class="num">{{ tx_amount(t) }}</td>
+      <td class="actions"><a href="/finance/transactions/{{ t.id }}/edit">Edit</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if pages > 1 %}
+<nav class="pager" aria-label="Pages">
+  {% if page > 1 %}<a href="/finance/transactions?{{ qs }}&amp;page={{ page - 1 }}">Previous</a>{% endif %}
+  <span>Page {{ page }} of {{ pages }}</span>
+  {% if page < pages %}<a href="/finance/transactions?{{ qs }}&amp;page={{ page + 1 }}">Next</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<section class="empty"><h2>No transactions found</h2><p>Nothing matches these filters. Try a wider period, or add a transaction.</p></section>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{% block page_title %}Finance{% endblock %} - {{ settings.app_name }}{% endblock %}
+{% block content %}
+<nav class="tabs" aria-label="Finance sections">
+  {% for key, label, href in [("overview", "Overview", "/finance"), ("transactions", "Transactions", "/finance/transactions"), ("accounts", "Accounts", "/finance/accounts"), ("wealth", "Net worth", "/finance/wealth"), ("reports", "Reports", "/finance/reports"), ("categories", "Categories", "/finance/categories")] %}
+  <a href="{{ href }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>
+{% block body %}{% endblock %}
+{% endblock %}
